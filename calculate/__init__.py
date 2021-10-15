@@ -1,31 +1,30 @@
 from random import sample
-import functools
-import operator
 import time
 import re
 
-# TODO: I should use a board class
 
-memoization_dict = {tuple(['ssss']): 16,
-                    tuple(['sss']): 10,
-                    tuple(['ss']): 5,
-                    tuple(['s']): 2,
-                    tuple(['s.s']): 4,
-                    tuple(['s..s']): 4,
-                    tuple(['ss.s']): 7,
-                    tuple(['s.ss']): 7,
-                    tuple([]): 0
-                    }
-
-
-def flatten(array):
-    """Flattens the 4x4 2D list into a list of length 16. Inverse of function stack(array)."""
-    return functools.reduce(operator.iconcat, array, [])
+def random_board():
+    """Generates a new random 4x4 list by sampling a list containing the following tiles:
+                    s:          shopping districts
+                    f:          factories
+                    1/2/3/4:    entertainment venues (pub, restaurant, music, hotel)
+                    o:          office
+                    p:          park
+                    h:          housing
+                """
+    all_tiles = (['s'] * 16) + (['f'] * 16) + (['1', '2', '3', '4'] * 7) + (['o'] * 16) + (['p'] * 16) + (
+            ['h'] * 16)
+    random_sample = sample(all_tiles, 16)
+    return [''.join(random_sample[i:i + 4]) for i in range(0, 16, 4)]
 
 
-def stack(array):
-    """Wraps a list of length 16 into a 4x4 2D list. Inverse of function flatten(array)."""
-    return [array[0:4], array[4:8], array[8:12], array[12:16]]
+def checkNonNegIndex(num):
+    """If the passed number is negative, returns None. Else, the number is returned.
+    This deliberately raises an index error when the value None is passed as the index of the board."""
+    if num < 0:
+        return None
+    else:
+        return num
 
 
 def substr_in_list(lst, string):
@@ -35,26 +34,6 @@ def substr_in_list(lst, string):
         if string in element:
             return True
     return False
-
-
-def shopping(board):
-    board = [re.sub(r'[foph1-4]', '.', ''.join(row)) for row in board]
-    return evaluate_node(trim_board(board), 4)
-
-
-def random_board():
-    """Generates a new random 4x4 list by sampling a list containing the following tiles:
-        s:          shoppping districts
-        f:          factories
-        1/2/3/4:    entertainment venues (pub, restaurant, music, hotel)
-        o:          office
-        p:          park
-        h:          housing
-    """
-    all_tiles = (['s'] * 16) + (['f'] * 16) + (['1', '2', '3', '4'] * 7) + (['o'] * 16) + (['p'] * 16) + (
-            ['h'] * 16)
-    random_array = sample(all_tiles, 16)
-    return stack(random_array)
 
 
 def evaluate_node(sub_board, run_length):
@@ -128,192 +107,205 @@ def transpose(str_list):
     return transposed_board
 
 
-def factories(flattened_board):
-    """Determines the number of points scored for factories.
-    In a normal game of Between Two Cities, the player with most factories scores 4 points per factory.
-    Second and third place score 3 and 2 points per factory respectively.
-    Since this code only attempts to determine the maximum score of a given board, the maximum multiplier is used.
-    """
-    return flattened_board.count("f") * 4
+memoization_dict = {tuple(['ssss']): 16,
+                    tuple(['sss']): 10,
+                    tuple(['ss']): 5,
+                    tuple(['s']): 2,
+                    tuple(['s.s']): 4,
+                    tuple(['s..s']): 4,
+                    tuple(['ss.s']): 7,
+                    tuple(['s.ss']): 7,
+                    tuple([]): 0
+                    }
 
 
-def entertainment(flattened_board):
-    """Determines the number of points scored for entertainment venues.
-    Points are scored for the number of different kinds of venue present.
-            N  Points
-            1       2
-            2       4
-            3       9
-            4       17
-    """
-    num = 0
-    if "1" in flattened_board:
-        num += 1
-    if "2" in flattened_board:
-        num += 1
-    if "3" in flattened_board:
-        num += 1
-    if "4" in flattened_board:
-        num += 1
-    point_dict = {0: 0, 1: 1, 2: 4, 3: 9, 4: 17}
-    return point_dict[num]
+class Board:
+    def __init__(self):
+        self.as_list = random_board()
+        self.as_str = ''.join(self.as_list)
 
+    @property
+    def entertainment(self):
+        """Determines the number of points scored for entertainment venues.
+            Points are scored for the number of different kinds of venue present.
+                    N  Points
+                    1       2
+                    2       4
+                    3       9
+                    4       17
+            """
+        num = 0
+        if "1" in self.as_str:
+            num += 1
+        if "2" in self.as_str:
+            num += 1
+        if "3" in self.as_str:
+            num += 1
+        if "4" in self.as_str:
+            num += 1
+        point_dict = {0: 0, 1: 1, 2: 4, 3: 9, 4: 17}
+        return point_dict[num]
 
-def offices(board, flattened_board):
-    """Determines the number of points scored for offices.
-    Points are scored for the number of offices present:
-            Number  Points
-            1       1
-            2       3
-            3       6
-            4       10
-            5       15
-            6+       21
-    There is an additional point scored for each office that shares an edge with an entertainment venue."""
-    point_dict = [0, 1, 3, 6, 10, 15, 21]
-    points = 0
-    if (num_offices := flattened_board.count('o')) > 6:
-        points += 21
-    else:
-        points += point_dict[num_offices]
-    for i in range(4):
-        for j in range(4):
-            nearest = neighbours(board, i, j)
-            if '1' in nearest or '2' in nearest or '3' in nearest or '4' in nearest:
-                points += 1
-    return points
-    # this is broken
+    @property
+    def factories(self):
+        """Determines the number of points scored for factories.
+            In a normal game of Between Two Cities, the player with most factories scores 4 points per factory.
+            Second and third place score 3 and 2 points per factory respectively.
+            Since this code only attempts to determine the maximum score of a given board, the maximum multiplier is used.
+            """
+        return self.as_str.count("f") * 4
 
-
-def parks(board):
-    """Determines the number of points scored for parks.
-    Each contiguous park scores the following number of points depending on their size:
-            Size  Points
-            1       2
-            2       8
-            3       12
-            4       13
-            5       14
-    """
-    point_array = [0, 2, 8, 12, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]
-    park_coords = []
-    parks_sorted = []
-    for i in range(4):
-        for j in range(4):
-            if board[i][j] == 'p':
-                park_coords.append(tuple([i, j]))
-    while len(park_coords) > 0:
-        x, y = park_coords.pop(0)
-        if len(parks_sorted) == 0:
-            parks_sorted.append([(x, y)])
-        else:
-            borders_bool = []
-            for block_no, park_block in enumerate(parks_sorted):
-                borders_bool.append(False)
-                for i, j in park_block:
-                    if abs(x - i) + abs(y - j) == 1:
-                        borders_bool[block_no] = True
-            if (num_true := borders_bool.count(True)) == 1:
-                parks_sorted[borders_bool.index(True)].append((x, y))
-            elif num_true > 1:
-                new_parks_sorted = []
-                i_mega_park = None
-                for block_no, park_block in enumerate(parks_sorted):
-                    if borders_bool[block_no]:  # If it is bordering
-                        if i_mega_park is None:
-                            i_mega_park = block_no
-                            new_parks_sorted.append(park_block)
-                        else:
-                            new_parks_sorted[i_mega_park] += park_block
-                            new_parks_sorted[i_mega_park] += [(x, y)]
-                            parks_sorted = new_parks_sorted
+    @property
+    def houses(self):
+        """Determines the number of points scored for houses.
+        Each house has value equal to the number of types of districts on the board (1-5).
+        However, a house next to a factory only scores one point."""
+        num = 0
+        points = 0
+        # TODO: add pattern matching
+        if "s" in self.as_str:
+            num += 1
+        if "f" in self.as_str:
+            num += 1
+        if "1" in self.as_str or "2" in self.as_str or "3" in self.as_str or "4" in self.as_str:
+            num += 1
+        if "o" in self.as_str:
+            num += 1
+        if "p" in self.as_str:
+            num += 1
+        for i in range(4):
+            for j in range(4):
+                if self.as_list[i][j] == 'h':
+                    if 'f' in self.neighbours(i, j):
+                        points += 1
                     else:
-                        new_parks_sorted.append(park_block)
-                        parks_sorted = new_parks_sorted
-            else:
+                        points += num
+        return points
+
+    def neighbours(self, i, j):
+        """Return a list of length 2-4 containing the tiles
+        which share an edge with the specified tile with coordinates i, j. """
+        nearest = []
+        for x_offset, y_offset in [(0, -1), (0, 1), (1, 0), (-1, 0)]:
+            try:
+                nearest.append(self.as_list[checkNonNegIndex(i + x_offset)][checkNonNegIndex(j + y_offset)])
+            except IndexError:
+                continue
+            except TypeError:
+                continue
+        return nearest
+
+    @property
+    def offices(self):
+        """Determines the number of points scored for offices.
+            Points are scored for the number of offices present:
+                    Number  Points
+                    1       1
+                    2       3
+                    3       6
+                    4       10
+                    5       15
+                    6+       21
+            There is an additional point scored for each office that shares an edge with an entertainment venue."""
+        point_dict = [0, 1, 3, 6, 10, 15, 21]
+        points = 0
+        if (num_offices := self.as_str.count('o')) > 6:
+            points += 21
+        else:
+            points += point_dict[num_offices]
+        for i in range(4):
+            for j in range(4):
+                if self.as_list[i][j] == 'o':
+                    nearest = self.neighbours(i, j)
+                    if '1' in nearest or '2' in nearest or '3' in nearest or '4' in nearest:
+                        points += 1
+        return points
+
+    @property
+    def parks(self):
+        """Determines the number of points scored for parks.
+            Each contiguous park scores the following number of points depending on their size:
+                    Size  Points
+                    1       2
+                    2       8
+                    3       12
+                    4       13
+                    5       14
+            """
+        point_array = [0, 2, 8, 12, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]
+        park_coords = []
+        parks_sorted = []
+        for i in range(4):
+            for j in range(4):
+                if self.as_list[i][j] == 'p':
+                    park_coords.append(tuple([i, j]))
+        while len(park_coords) > 0:
+            x, y = park_coords.pop(0)
+            if len(parks_sorted) == 0:
                 parks_sorted.append([(x, y)])
-
-    return sum([point_array[len(block)] for block in parks_sorted])
-
-
-def checkNonNegIndex(num):
-    """If the passed number is negative, returns None. Else, the number is returned.
-    This deliberately raises an index error when the value None is passed as the index of the board."""
-    if num < 0:
-        return None
-    else:
-        return num
-
-
-def neighbours(board, i, j):
-    """Return a list of length 2-4 containing the tiles
-    which share an edge with the specified tile with coordinates i, j. """
-    rel_coords = [(0, -1), (0, 1), (1, 0), (-1, 0)]
-    neighbours = []
-    for x_offset, y_offset in rel_coords:
-        try:
-            neighbours.append(board[checkNonNegIndex(i + x_offset)][checkNonNegIndex(j + y_offset)])
-        except IndexError:
-            continue
-        except TypeError:
-            continue
-    return neighbours
-
-
-def houses(board, flattened_board):
-    """Determines the number of points scored for houses.
-    Each house has value equal to the number of types of districts on the board (1-5).
-    However, a house next to a factory only scores one point."""
-    num = 0
-    points = 0
-    if "s" in flattened_board:
-        num += 1
-    if "f" in flattened_board:
-        num += 1
-    if "1" in flattened_board or "2" in flattened_board or "3" in flattened_board or "4" in flattened_board:
-        num += 1
-    if "o" in flattened_board:
-        num += 1
-    if "p" in flattened_board:
-        num += 1
-    for i in range(4):
-        for j in range(4):
-            if board[i][j] == 'h':
-                if 'f' in neighbours(board, i, j):
-                    points += 1
+            else:
+                borders_bool = []
+                for block_no, park_block in enumerate(parks_sorted):
+                    borders_bool.append(False)
+                    for i, j in park_block:
+                        if abs(x - i) + abs(y - j) == 1:
+                            borders_bool[block_no] = True
+                if (num_true := borders_bool.count(True)) == 1:
+                    parks_sorted[borders_bool.index(True)].append((x, y))
+                elif num_true > 1:
+                    new_parks_sorted = []
+                    i_mega_park = None
+                    for block_no, park_block in enumerate(parks_sorted):
+                        if borders_bool[block_no]:  # If it is bordering
+                            if i_mega_park is None:
+                                i_mega_park = block_no
+                                new_parks_sorted.append(park_block)
+                            else:
+                                new_parks_sorted[i_mega_park] += park_block
+                                new_parks_sorted[i_mega_park] += [(x, y)]
+                                parks_sorted = new_parks_sorted
+                        else:
+                            new_parks_sorted.append(park_block)
+                            parks_sorted = new_parks_sorted
                 else:
-                    points += num
-    return points
+                    parks_sorted.append([(x, y)])
 
+        return sum([point_array[len(block)] for block in parks_sorted])
 
-def count_points(board):
-    """Sum the total number of points scored by this board arrangement."""
-    flattened = flatten(board)
-    points = (s := shopping(board)) + (f := factories(flattened)) + (e := entertainment(flattened)) \
-             + (o := offices(board, flattened)) + (p := parks(board)) + (h := houses(board, flattened))
-    return points
+    @property
+    def points(self):
+        return sum([self.entertainment, self.factories, self.houses, self.offices, self.parks, self.shopping])
+
+    @property
+    def shopping(self):
+        board = [re.sub(r'[foph1-4]', '.', ''.join(row)) for row in self.as_list]
+        return evaluate_node(trim_board(board), 4)
+
+    def __str__(self):
+        return '\n'.join([' '.join(char) for char in self.as_list])
 
 
 if __name__ == '__main__':
     tic = time.perf_counter()
-    best_board = None
+    best_boards = []
     best_score = 0
-    solutions_for_this_score = 0
-    x = 100000
-    for i in range(x+1):
-        if i >= 10000 and i % 10000 == 0:
-            print(f'{i} solutions tested in {time.perf_counter() - tic} seconds')
-        if (new_score := count_points(b := random_board())) >= best_score:
-            if new_score == best_score:
-                solutions_for_this_score += 1
-            else:
-                solutions_for_this_score = 0
-                best_score = new_score
-                best_board = b
+    x = 5000000
+    length = 0
+    try:
+        for i in range(x + 1):
+            if i >= (n := 10000) and i % n == 0:
+                print(f'{i} solutions tested in {0 - tic + (tic := time.perf_counter())} seconds')
+                print(f'    {0 - length + (length := len(memoization_dict))} entries added to dict')
+            if (new_score := (b := Board()).points) >= best_score:
+                if new_score > best_score:
+                    best_boards = []
+                    best_score = new_score
+                best_boards.append(b)
+    except KeyboardInterrupt:
+        i -= 1
 
     print(f'\nCalculation took {time.perf_counter() - tic} seconds')
-    print(f'Tested {x} solutions')
+    print(f'Tested {i} solutions')
     print(f'Optimal score: {best_score}')
-    print(f'Number of solutions for this score: {solutions_for_this_score}')
-    print(f'Best board:')
-    print('\n'.join([' '.join(row) for row in best_board]))
+    print(f'Number of solutions for this score: {len(best_boards)}')
+    print(f'Best board:\n{best_boards[0]}')
