@@ -28,17 +28,25 @@ There is a bug/feature where sometimes, it is more beneficial to score two runs 
 
 Example A
                         
-. s s s       One run of 4 (16 points) + four runs of 1 (2x2=8 points) = 24 points  (the algorithm chooses this)
-. . s .       OR
-. . s .       Two runs of 3 (2x10=20 points) + one run of 2 (5 points) = 25 points  (this scores higher)
+. s s s       
+. . s .       
+. . s .       
 . s s s
+
+One run of 4 (16 points) + four runs of 1 (2x2=8 points) = 24 points  (the algorithm chooses this) \
+OR \
+Two runs of 3 (2x10=20 points) + one run of 2 (5 points) = 25 points  (this scores higher) \
 
 Example B
                         
-s s s .       One run of 4 (16 points) + one run of 2 (5 points) + four runs of 1 (2x2=8 points) = 29 points  (the algorithm chooses this)
-. s s s       OR
-. s . .       Three runs of 3 (3x10=30 points) + one run of 1 (1 point)                          = 31 points  (this scores higher)
+s s s .       
+. s s s       
+. s . .       
 s s s .
+
+One run of 4 (16 points) + one run of 2 (5 points) + four runs of 1 (2x2=8 points) = 29 points  (the algorithm chooses this) \
+OR \
+Three runs of 3 (3x10=30 points) + one run of 1 (1 point)                          = 31 points  (this scores higher) \
 
 Since it is not clear in the rules of the game which option is preferred in this case (it is a very poor strategy for a high number of points), I have decided to go for the computationally easier option (the lower score) of always eliminating the highest order runs wherever possible, as this usually gives the highest score (especially in the boards which are likely to be record-scoring).
 
