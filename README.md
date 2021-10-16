@@ -24,6 +24,24 @@ The program searches approximately 10,000 solutions per second, and the most hig
 - Parks come in groups of 2, usually only one group (or two). 8 points is much more than 2, and not that much less than 12.
 - Offices are the real high-scorer. All the top solutions have 27 points (6 offices, each with a +1 bonus for being next to an entertainment venue). This seems to be the best strategy in terms of maximising points.
 
-Future optimisations may be made to the board generation code to make it more sensible (you're unlikely to have a high-scoring city with more than (or less than!) one of each kind of entertainment venue, or more than 3 parks in a board, for example). If such optimisations are made, a more exhaustive (rather than random) search may be more possible.
+There is a bug/feature where sometimes, it is more beneficial to score two runs of 3 shopping districts rather than one run of 4 ("." denotes any non-shopping tile):
+
+Example A
+                        
+. s s s       One run of 4 (16 points) + four runs of 1 (2x2=8 points) = 24 points  (the algorithm chooses this)
+. . s .       OR
+. . s .       Two runs of 3 (2x10=20 points) + one run of 2 (5 points) = 25 points  (this scores higher)
+. s s s
+
+Example B
+                        
+s s s .       One run of 4 (16 points) + one run of 2 (5 points) + four runs of 1 (2x2=8 points) = 29 points  (the algorithm chooses this)
+. s s s       OR
+. s . .       Three runs of 3 (3x10=30 points) + one run of 1 (1 point)                          = 31 points  (this scores higher)
+s s s .
+
+Since it is not clear in the rules of the game which option is preferred in this case (it is a very poor strategy for a high number of points), I have decided to go for the computationally easier option (the lower score) of always eliminating the highest order runs wherever possible, as this usually gives the highest score (especially in the boards which are likely to be record-scoring).
+
+Future optimisations may be made to the board generation code to make it more sensible, as you're unlikely to have a high-scoring city with more than (or less than!) one of each kind of entertainment venue, or more than 3 parks in a board, for example). If such optimisations are made, a more exhaustive (rather than random) search may be more possible.
 
 I found the problem-solving for the shopping district algorithm particularly enjoyable. It wasn't immediately obvious what the best algorithm would be, and I tried a few overcomplicated recursive options before settling on this one. Using a class for the board structure should have been an obvious starting point too, and next time I come across a similar problem, I'll do that instead!
