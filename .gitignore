@@ -1,0 +1,4 @@
+# Project exclude paths
+/venv/
+best_boards.json
+memoization_dict.json

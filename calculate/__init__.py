@@ -328,14 +328,14 @@ if __name__ == '__main__':
     else:
         best_boards = []
         best_score = 0
-    x = 10000000 # 20 minutes
+    x = 20000000 # 20 minutes
     length = len(memoization_dict)
     tic = time.perf_counter()
     toc = tic
     try:
         for i in range(x + 1):
             if i >= (n := 10000) and i % n == 0:
-                print(f'{i} solutions tested in another {(0 - toc + (toc := time.perf_counter())):.4f} seconds with {0 - length + (length := len(memoization_dict))} entries added to dict')
+                print(f'{format(i, ",")} solutions tested in another {0 - toc + (toc := time.perf_counter()):.4f} seconds with {0 - length + (length := len(memoization_dict))} entries added to dict')
             if (new_score := (new_board := Board(random_board())).points) >= best_score:
                 if new_score > best_score:
                     best_boards = []
@@ -348,12 +348,12 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         i -= 1
 
-    print(f'\nCalculation took {time.perf_counter() - tic} seconds')
-    print(f'Tested {i} solutions')
+    print(f'\nCalculation took {((time.perf_counter() - tic) / 60):.3f} minutes')
+    print(f'Tested {format(i, ",")} solutions')
     print(f'Optimal score: {best_score}')
     print(f'Number of solutions for this score: {len(best_boards)}')
     print(f'Best board:\n{best_boards[0]}')
-    print(f'{len(memoization_dict)} entries in dict')
+    print(f'{format(len(memoization_dict), ",")} entries in dict')
     print(memoization_dict)
 
     with open('best_boards.json', 'w') as f:
